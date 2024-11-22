@@ -1,0 +1,20 @@
+{
+  "type": "imperialvon:void",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "imperialvon:void/void",
+      "lakes": false,
+      "features": false,
+      "layers": [
+        {
+          "block": "minecraft:air",
+          "height": 1
+        }
+      ],
+      "structures": {
+        "structures": {}
+      }
+    }
+  }
+}

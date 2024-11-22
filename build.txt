@@ -1,0 +1,19 @@
+# Mod Info
+mod_id=imperialvon
+archive_name=ImperialVon
+mod_name=ImperialVon
+mod_version=1.0.0
+public_build=false
+maven_group=ru.nightidk.imperialvon
+mc_version=1.19.2
+forge_version=43.4.2
+hl_version=19.3.82
+mcp_ch=parchment
+mcp_vr=2022.11.06-1.19.2
+cf_project=0
+release_type=alpha
+
+# JDA
+jda_version=5.0.1
+# Architectury
+architectury_version=6.6.92

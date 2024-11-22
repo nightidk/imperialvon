@@ -1,0 +1,285 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+buildscript {
+    repositories {
+        maven { url = 'https://maven.parchmentmc.org' }
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+        maven { url = 'https://maven.minecraftforge.net' }
+        maven { url = 'https://www.jabylon.org/maven/' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.69'
+        classpath group: "org.spongepowered", name: "mixingradle", version: "0.7-SNAPSHOT"
+        classpath 'io.freefair.gradle:lombok-plugin:6.6'
+        classpath 'org.parchmentmc:librarian:1.+'
+    }
+}
+
+plugins {
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: "io.freefair.lombok"
+apply plugin: 'org.parchmentmc.librarian.forgegradle'
+apply plugin: 'org.spongepowered.mixin'
+apply plugin: 'java'
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+
+ext.configFile = file("build.txt")
+
+configFile.withReader {
+    def prop = new Properties()
+    prop.load(it)
+    project.ext.config = new ConfigSlurper().parse(prop)
+    project.ext.hasConfig = { key ->
+        return config.isSet(key)
+    }
+}
+
+compileJava.options.encoding = 'UTF-8'
+
+version = config.mod_version
+group = config.maven_group
+archivesBaseName = "${config.archive_name}-${config.mc_version}"
+
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = JavaLanguageVersion.of(17)
+
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+
+mixin {
+    add sourceSets.main, "mixins.${config.mod_id}.refmap.json"
+}
+
+minecraft {
+    mappings channel: config.mcp_ch, version: config.mcp_vr
+
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+    runs {
+        client {
+            workingDirectory project.file('run/client')
+
+            args "-mixin.config=mixins.${config.mod_id}.json".split(" ")
+
+            if (System.env.ENABLE_JBRSDK_TRICKS != null) {
+                jvmArg "-XX:+AllowEnhancedClassRedefinition"
+                jvmArg "-XX:+AllowRedefinitionToAddDeleteMethods"
+            }
+
+            jvmArg "-Xmx5G"
+
+            if (System.env.MC_USERNAME != null) {
+                arg "--username"
+                arg System.env.MC_USERNAME
+            }
+
+            property "mixin.debug.export", 'true'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                imperialvon {
+                    source sourceSets.main
+                    resource sourceSets.main.resources
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run/server')
+
+            arg "-mixin.config=mixins.${config.mod_id}.json"
+            jvmArg "-nogui"
+
+            mods {
+                imperialvon {
+                    source sourceSets.main
+                    resource sourceSets.main.resources
+                }
+            }
+        }
+
+        data {
+            workingDirectory project.file('run/data')
+
+            arg "-mixin.config=mixins.${config.mod_id}.json"
+
+            mods {
+                imperialvon {
+                    source sourceSets.main
+                    resource sourceSets.main.resources
+                }
+            }
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+configurations {
+    shade
+    implementation.extendsFrom(shade)
+}
+
+
+repositories {
+    flatDir { dirs "libs/combined" }
+    flatDir { dirs "libs/runtime" }
+    flatDir { dirs "libs/classpath" }
+
+    maven { url "https://maven.architectury.dev/" }
+
+    maven {
+        name = "Zeitheron Maven"
+        url = "https://maven.zeith.org/"
+        content {
+            includeGroupByRegex "org\\.zeith.*"
+        }
+    }
+
+    maven {
+        url "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
+
+    maven { url = "https://mvnrepository.com/" }
+
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'io.freefair.gradle:lombok-plugin:6.6'
+    annotationProcessor 'io.freefair.gradle:lombok-plugin:6.6'
+
+    if (System.getProperty("idea.sync.active") != "true") {
+        annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
+    }
+
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.3.5"))
+
+    implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.3.5")) {
+        jarJar.ranged(it, "[0.3.5,)")
+    }
+
+    minecraft "net.minecraftforge:forge:${config.mc_version}-${config.forge_version}"
+
+    implementation fg.deobf("org.zeith.hammerlib:HammerLib-${config.mc_version}:${config.hl_version}")
+
+    implementation fg.deobf("dev.architectury:architectury-forge:${config.architectury_version}")
+
+    implementation 'org.jetbrains:annotations:20.1.0'
+
+    implementation 'com.neovisionaries:nv-websocket-client:2.14'
+
+
+    def libraries = file("libs")
+
+    if (!libraries.isDirectory())
+        libraries.mkdirs()
+
+    def libDir = new File(libraries, "combined");
+
+    if (libDir.isDirectory()) {
+        libDir.eachFile { file ->
+            def splitPos = file.name.lastIndexOf("-")
+
+            def modartifact = file.name.substring(0, splitPos)
+            def modversion = file.name.substring(splitPos + 1, file.name.length() - 4)
+
+            dependencies {
+                implementation fg.deobf(project.dependencies.create("_combined:$modartifact:$modversion") {
+                    transitive = false
+                })
+            }
+        }
+    } else libDir.mkdir();
+
+    libDir = new File(libraries, "classpath");
+
+    if (libDir.isDirectory()) {
+        libDir.eachFile { file ->
+            def splitPos = file.name.lastIndexOf("-")
+
+            def modartifact = file.name.substring(0, splitPos)
+            def modversion = file.name.substring(splitPos + 1, file.name.length() - 4)
+
+            dependencies {
+                compileOnly fg.deobf(project.dependencies.create("_classpath:$modartifact:$modversion") {
+                    transitive = false
+                })
+            }
+        }
+    } else libDir.mkdir();
+
+    libDir = new File(libraries, "runtime");
+
+    if (libDir.isDirectory()) {
+        libDir.eachFile { file ->
+            def splitPos = file.name.lastIndexOf("-")
+            if(splitPos == -1) {
+                throw new IllegalArgumentException("File name is not valid: ${file.name}")
+            }
+
+            def modartifact = file.name.substring(0, splitPos)
+            def modversion = file.name.substring(splitPos + 1, file.name.length() - 4)
+
+            dependencies {
+                runtimeClasspath fg.deobf(project.dependencies.create("_runtime:$modartifact:$modversion") {
+                    transitive = false
+                })
+            }
+        }
+    } else libDir.mkdir();
+}
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title"     : "${config.mod_id}",
+//                "Specification-Vendor"    : "nightidk",
+                "Specification-Version"   : "1",
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : "${version}",
+//                "Implementation-Vendor"   : "nightidk",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                "MixinConfigs"            : "mixins.${config.mod_id}.json"
+        ])
+    }
+
+    project.configurations.shade.each { dep ->
+        from(project.zipTree(dep)) {
+            exclude 'META-INF', 'META-INF/**'
+        }
+    }
+
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+        duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    }
+}
+
+jar.finalizedBy('reobfJar')
+
+shadowJar {
+    archiveBaseName = "${config.archive_name}-${config.mc_version}-${config.mod_version}-shaded"
+    zip64 true
+    configurations = [project.configurations.shade]
+    relocate "com.google", "shaded.com.google"
+
+    minimize()
+    mergeServiceFiles()
+}
+
+assemble.dependsOn shadowJar
+
+reobf {
+    shadowJar {}
+}

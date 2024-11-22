@@ -1,0 +1,35 @@
+modLoader="javafml"
+loaderVersion="[43,)"
+license="All rights reserved"
+[[mods]]
+modId="imperialvon"
+version="${file.jarVersion}"
+displayName = "ImperialVon"
+authors = "nightidk"
+description = '''
+Imperial?
+'''
+[[dependencies.imperialvon]]
+modId="forge"
+mandatory=true
+versionRange="[43,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.imperialvon]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.19.2]"
+ordering="NONE"
+side="BOTH"
+[[dependencies.imperialvon]]
+modId="hammerlib"
+mandatory=true
+versionRange="[19.3.81,)"
+ordering="AFTER"
+side="BOTH"
+[[dependencies.imperialvon]]
+modId="jdautil"
+mandatory=true
+versionRange="*"
+ordering="AFTER"
+side="BOTH"
