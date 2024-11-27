@@ -4,14 +4,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import dev.architectury.platform.Platform;
+import net.minecraft.core.BlockPos;
 import ru.nightidk.imperialvon.ImperialVon;
 
 import java.io.*;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public class RegionsHandler {
     protected static final File REGION_FILE = new File(Platform.getModsFolder().toFile() + "/ImperialVon/", "regions.json");
@@ -62,5 +60,22 @@ public class RegionsHandler {
         return regions.values().stream().filter(region -> Objects.equals(region.owner, ownerName)).toList();
     }
 
+    public static List<RegionManager> getAllRegions() {
+        return new ArrayList<>(regions.values());
+    }
 
+    public static RegionManager getRegionForPosition(BlockPos pos) {
+        return regions.values().stream()
+                .filter(region -> isPositionWithinRegion(pos, region.getPositions()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static boolean isPositionWithinRegion(BlockPos pos, RegionPositions positions) {
+        BlockPos pos1 = new BlockPos(positions.getPos1());
+        BlockPos pos2 = new BlockPos(positions.getPos2());
+        return pos.getX() >= Math.min(pos1.getX(), pos2.getX()) && pos.getX() <= Math.max(pos1.getX(), pos2.getX())
+                && pos.getY() >= Math.min(pos1.getY(), pos2.getY()) && pos.getY() <= Math.max(pos1.getY(), pos2.getY())
+                && pos.getZ() >= Math.min(pos1.getZ(), pos2.getZ()) && pos.getZ() <= Math.max(pos1.getZ(), pos2.getZ());
+    }
 }

@@ -4,12 +4,14 @@ import lombok.Getter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.forgespi.Environment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeith.hammerlib.core.adapter.LanguageAdapter;
+import ru.nightidk.imperialvon.init.ArgumentRegistry;
 import ru.nightidk.imperialvon.init.setup.BothSetup;
 import ru.nightidk.imperialvon.init.setup.ClientSetup;
 import ru.nightidk.imperialvon.init.setup.ServerSetup;
@@ -34,6 +36,10 @@ public class ImperialVon
         FMLJavaModLoadingContext.get().getModEventBus().addListener(ClientSetup::setup);
         FMLJavaModLoadingContext.get().getModEventBus().addListener(ServerSetup::setup);
         FMLJavaModLoadingContext.get().getModEventBus().addListener(BothSetup::setup);
+
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+
+        ArgumentRegistry.registerArgumentTypes(modEventBus);
 
         envType = Environment.get().getDist();
 

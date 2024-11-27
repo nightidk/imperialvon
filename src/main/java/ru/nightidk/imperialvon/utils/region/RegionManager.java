@@ -2,25 +2,19 @@ package ru.nightidk.imperialvon.utils.region;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.Vec3;
 
 import java.util.HashSet;
 import java.util.Set;
 
+@Getter
 public class RegionManager {
-    @Getter
     protected final RegionPositions positions;
-    @Getter
     @Setter
     protected String owner;
-    @Getter
     protected final Set<String> members = new HashSet<>();
-    @Getter
     @Setter
     protected String name;
 
-    @Getter
     protected RegionFlags flags;
 
     protected RegionManager(RegionPositions positions, String owner, String name) {

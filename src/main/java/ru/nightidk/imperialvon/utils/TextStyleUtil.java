@@ -9,6 +9,7 @@ public enum TextStyleUtil {
     DARK_AQUA (Style.EMPTY.withColor(TextColor.fromRgb(0x3f9efc))),
     WHITE (Style.EMPTY.withColor(TextColor.fromRgb(0xffffff))),
     RED (Style.EMPTY.withColor(TextColor.fromRgb(0xff0000))),
+    PURPLE (Style.EMPTY.withColor(TextColor.fromRgb(0xff00ff))),
     YELLOW (Style.EMPTY.withColor(TextColor.fromRgb(0xffff00))),
     GREEN (Style.EMPTY.withColor(TextColor.fromRgb(0x00ff00)));
 

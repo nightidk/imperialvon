@@ -3,6 +3,8 @@ package ru.nightidk.imperialvon.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import ru.nightidk.imperialvon.ImperialVon;
 import ru.nightidk.imperialvon.configuration.ConfigVariables;
 import ru.nightidk.imperialvon.utils.ChatMessageUtil;
@@ -15,8 +17,7 @@ import ru.nightidk.jdautil.types.BaseEmbed;
 import java.awt.*;
 import java.io.IOException;
 
-import static ru.nightidk.imperialvon.utils.ChatMessageUtil.getStyledComponent;
-import static ru.nightidk.imperialvon.utils.ChatMessageUtil.sendChatMessageToAll;
+import static ru.nightidk.imperialvon.utils.ChatMessageUtil.*;
 
 public class MaintanceCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -31,33 +32,37 @@ public class MaintanceCommand {
                                                             ConfigVariables.MAINTANCE = true;
                                                             try {
                                                                 ConfigUtils.saveConfig(ImperialVon.configFile);
-                                                            } catch (IOException e) {
-                                                                e.printStackTrace();
-                                                            }
-                                                            ImperialVon.LOG.info("Maintains on.");
-                                                            sendChatMessageToAll(
-                                                                    context.getSource().getServer().getPlayerList().getPlayers(),
-                                                                    getStyledComponent("[Оповещение]", TextStyleUtil.DARK_AQUA.getStyle())
-                                                                            .append(getStyledComponent(" Включён режим технических работ.", TextStyleUtil.RED.getStyle())),
-                                                                    ChatMessageUtil.MessageType.NOTIFY
-                                                            );
-                                                            context.getSource().getServer().getPlayerList().getPlayers().forEach(s -> {
-                                                                if (!s.hasPermissions(4))
-                                                                    s.connection.disconnect(getStyledComponent("На сервере ведутся технические работы.", TextStyleUtil.RED.getStyle()));
-                                                            });
 
-                                                            MessageActions.editMessage(
-                                                                    "1250591961988206652",
-                                                                    ConfigVariables.DISCORD_STATUS_MESSAGE,
-                                                                    null,
-                                                                    new BaseEmbed(
-                                                                            "Информация об сервере",
-                                                                            "Статус: Тех.работы",
-                                                                            new Color(255, 136, 0).getRGB(),
-                                                                            new AuthorInfoBase("Империя \"von\"")
-                                                                    )
-                                                            );
-                                                            return 1;
+                                                                ImperialVon.LOG.info("Maintains on.");
+                                                                sendChatMessageToAll(
+                                                                        context.getSource().getServer().getPlayerList().getPlayers(),
+                                                                        getStyledComponent("[Оповещение]", TextStyleUtil.DARK_AQUA.getStyle())
+                                                                                .append(getStyledComponent(" Включён режим технических работ.", TextStyleUtil.RED.getStyle())),
+                                                                        ChatMessageUtil.MessageType.NOTIFY
+                                                                );
+                                                                context.getSource().getServer().getPlayerList().getPlayers().forEach(s -> {
+                                                                    if (!s.hasPermissions(4))
+                                                                        s.connection.disconnect(getStyledComponent("На сервере ведутся технические работы.", TextStyleUtil.RED.getStyle()));
+                                                                });
+
+                                                                MessageActions.editMessage(
+                                                                        "1250591961988206652",
+                                                                        ConfigVariables.DISCORD_STATUS_MESSAGE,
+                                                                        null,
+                                                                        new BaseEmbed(
+                                                                                "Информация об сервере",
+                                                                                "Статус: Тех.работы",
+                                                                                new Color(255, 136, 0).getRGB(),
+                                                                                new AuthorInfoBase("Империя \"von\"")
+                                                                        )
+                                                                );
+                                                                return 1;
+                                                            } catch (IOException e) {
+                                                                ImperialVon.LOG.error(e);
+                                                                if (context.getSource().getPlayer() != null)
+                                                                    context.getSource().sendFailure(Component.literal("Произошла ошибка."));
+                                                                return -1;
+                                                            }
                                                         })
                                         )
                                         .then(
@@ -66,28 +71,31 @@ public class MaintanceCommand {
                                                             ConfigVariables.MAINTANCE = false;
                                                             try {
                                                                 ConfigUtils.saveConfig(ImperialVon.configFile);
+                                                                sendChatMessageToAll(
+                                                                        context.getSource().getServer().getPlayerList().getPlayers(),
+                                                                        getStyledComponent("[Оповещение]", TextStyleUtil.DARK_AQUA.getStyle())
+                                                                                .append(getStyledComponent(" Отключён режим технических работ.", TextStyleUtil.RED.getStyle())),
+                                                                        ChatMessageUtil.MessageType.NOTIFY
+                                                                );
+                                                                ImperialVon.LOG.info("Maintains off.");
+                                                                MessageActions.editMessage(
+                                                                        "1250591961988206652",
+                                                                        ConfigVariables.DISCORD_STATUS_MESSAGE,
+                                                                        null,
+                                                                        new BaseEmbed(
+                                                                                "Информация об сервере",
+                                                                                "Статус: Работает",
+                                                                                new Color(0, 255, 0).getRGB(),
+                                                                                new AuthorInfoBase("Империя \"von\"")
+                                                                        )
+                                                                );
+                                                                return 1;
                                                             } catch (IOException e) {
-                                                                e.printStackTrace();
+                                                                ImperialVon.LOG.error(e);
+                                                                if (context.getSource().getPlayer() != null)
+                                                                    context.getSource().sendFailure(Component.literal("Произошла ошибка."));
+                                                                return -1;
                                                             }
-                                                            sendChatMessageToAll(
-                                                                    context.getSource().getServer().getPlayerList().getPlayers(),
-                                                                    getStyledComponent("[Оповещение]", TextStyleUtil.DARK_AQUA.getStyle())
-                                                                            .append(getStyledComponent(" Отключён режим технических работ.", TextStyleUtil.RED.getStyle())),
-                                                                    ChatMessageUtil.MessageType.NOTIFY
-                                                            );
-                                                            ImperialVon.LOG.info("Maintains off.");
-                                                            MessageActions.editMessage(
-                                                                    "1250591961988206652",
-                                                                    ConfigVariables.DISCORD_STATUS_MESSAGE,
-                                                                    null,
-                                                                    new BaseEmbed(
-                                                                            "Информация об сервере",
-                                                                            "Статус: Работает",
-                                                                            new Color(0, 255, 0).getRGB(),
-                                                                            new AuthorInfoBase("Империя \"von\"")
-                                                                    )
-                                                            );
-                                                            return 1;
                                                         })
                                         )
                         )

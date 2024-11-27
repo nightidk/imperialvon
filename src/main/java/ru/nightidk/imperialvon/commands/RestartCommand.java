@@ -77,7 +77,7 @@ public class RestartCommand {
                                             ChatMessageUtil.MessageType.NOTIFY
                                     );
                                     context.getSource().getServer().getPlayerList().getPlayers().forEach(serverPlayer -> serverPlayer.connection.disconnect(getStyledComponent("Перезагрузка сервера...", TextStyleUtil.DARK_AQUA.getStyle())));
-                                    context.getSource().getServer().stopServer();
+                                    context.getSource().getServer().halt(false);
                                     return 1;
                                 })
                         )

@@ -3,7 +3,7 @@
   "generator": {
     "type": "minecraft:flat",
     "settings": {
-      "biome": "imperialvon:void/void",
+      "biome": "imperialvon:void",
       "lakes": false,
       "features": false,
       "layers": [

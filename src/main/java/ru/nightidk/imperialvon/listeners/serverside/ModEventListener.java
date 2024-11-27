@@ -144,7 +144,7 @@ public class ModEventListener {
                     ChatMessageUtil.MessageType.NOTIFY
             );
             server.getPlayerList().getPlayers().forEach(serverPlayer -> serverPlayer.connection.disconnect(getStyledComponent("Перезагрузка сервера...", TextStyleUtil.DARK_AQUA.getStyle())));
-            server.stopServer();
+            server.halt(false);
         }
     }
 

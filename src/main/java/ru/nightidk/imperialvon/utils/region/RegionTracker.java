@@ -1,7 +1,6 @@
 package ru.nightidk.imperialvon.utils.region;
 
 import lombok.Getter;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
@@ -18,6 +17,11 @@ public class RegionTracker {
         RegionPositions rp = new RegionPositions(pos1, pos2);
         activeRegions.put(player.getUUID(), rp);
         return rp;
+    }
+
+    public static RegionPositions setRegion(ServerPlayer player, RegionPositions positions) {
+        activeRegions.put(player.getUUID(), positions);
+        return positions;
     }
 
     public static void removeRegion(ServerPlayer player) {

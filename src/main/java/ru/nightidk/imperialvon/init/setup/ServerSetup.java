@@ -1,13 +1,16 @@
 package ru.nightidk.imperialvon.init.setup;
 
+import com.mojang.datafixers.util.Pair;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.platform.Platform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -22,6 +25,7 @@ import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLDedicatedServerSetupEvent;
 import org.zeith.hammerlib.net.Network;
@@ -32,10 +36,8 @@ import ru.nightidk.imperialvon.init.WorldsIV;
 import ru.nightidk.imperialvon.listeners.serverside.AuthEventListener;
 import ru.nightidk.imperialvon.listeners.serverside.ModEventListener;
 import ru.nightidk.imperialvon.net.RegionRenderPacket;
-import ru.nightidk.imperialvon.utils.AuthUtil;
-import ru.nightidk.imperialvon.utils.ChatMessageUtil;
-import ru.nightidk.imperialvon.utils.Location;
-import ru.nightidk.imperialvon.utils.PlayerDataHandler;
+import ru.nightidk.imperialvon.utils.*;
+import ru.nightidk.imperialvon.utils.region.RegionHelper;
 import ru.nightidk.imperialvon.utils.region.RegionPositions;
 import ru.nightidk.imperialvon.utils.region.RegionTracker;
 import ru.nightidk.imperialvon.utils.region.RegionsHandler;
@@ -47,8 +49,11 @@ import ru.nightidk.jdautil.types.BaseEmbed;
 import java.awt.*;
 import java.io.File;
 import java.util.Objects;
+import java.util.Set;
 
 import static ru.nightidk.imperialvon.ImperialVon.*;
+import static ru.nightidk.imperialvon.utils.ChatMessageUtil.getStyledComponent;
+import static ru.nightidk.imperialvon.utils.ChatMessageUtil.sendChatMessageToPlayer;
 import static ru.nightidk.imperialvon.utils.ConfigUtils.loadAuth;
 import static ru.nightidk.imperialvon.utils.ConfigUtils.loadConfig;
 
@@ -78,6 +83,7 @@ public class ServerSetup {
             MaintanceCommand.register(dispatcher);
             AuthCommand.register(dispatcher);
             RegionCommand.register(dispatcher);
+            HatCommand.register(dispatcher);
         });
         LOG.info("Commands registered.");
 
@@ -166,6 +172,8 @@ public class ServerSetup {
 
     @SubscribeEvent
     public static void onHitBlock(PlayerInteractEvent.LeftClickBlock event) {
+        if (event.getSide() == LogicalSide.CLIENT) return;
+
         if (event.getEntity() instanceof ServerPlayer player) {
             ItemStack heldItem = player.getMainHandItem();
 
@@ -177,10 +185,14 @@ public class ServerSetup {
                 RegionPositions region = RegionTracker.getRegion(player);
                 if (region == null) {
                     region = RegionTracker.setRegion(player, pos, Vec3.ZERO);
-                    ChatMessageUtil.sendChatMessageToPlayer(player, Component.literal("Первая позиция установлена: " + blockPos.toShortString()));
+                    sendChatMessageToPlayer(player,
+                            getStyledComponent("[IVRegions] ", TextStyleUtil.DARK_AQUA.getStyle()).append(getStyledComponent("Первая позиция установлена: " + blockPos.toShortString(), TextStyleUtil.PURPLE.getStyle()))
+                    );
                 } else {
                     if (!Objects.equals(region.getPos1(), pos))
-                        ChatMessageUtil.sendChatMessageToPlayer(player, Component.literal("Первая позиция установлена: " + blockPos.toShortString()));
+                        sendChatMessageToPlayer(player,
+                                getStyledComponent("[IVRegions] ", TextStyleUtil.DARK_AQUA.getStyle()).append(getStyledComponent("Первая позиция установлена: " + blockPos.toShortString(), TextStyleUtil.PURPLE.getStyle()))
+                        );
                     region.setPos1(pos);
                 }
                 Network.sendTo(player, new RegionRenderPacket(region));
@@ -191,6 +203,8 @@ public class ServerSetup {
 
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getSide() == LogicalSide.CLIENT || event.getHand() != InteractionHand.MAIN_HAND) return;
+
         if (event.getEntity() instanceof ServerPlayer player) {
             ItemStack heldItem = player.getMainHandItem();
 
@@ -200,12 +214,40 @@ public class ServerSetup {
                 RegionPositions region = RegionTracker.getRegion(player);
                 if (region == null) {
                     region = RegionTracker.setRegion(player, Vec3.ZERO, pos);
-                    ChatMessageUtil.sendChatMessageToPlayer(player, Component.literal("Вторая позиция установлена: " + blockPos.toShortString()));
+                    sendChatMessageToPlayer(player,
+                            getStyledComponent("[IVRegions] ", TextStyleUtil.DARK_AQUA.getStyle()).append(getStyledComponent("Вторая позиция установлена: " + blockPos.toShortString(), TextStyleUtil.PURPLE.getStyle()))
+                    );
                 } else {
                     if (!Objects.equals(region.getPos2(), pos))
-                        ChatMessageUtil.sendChatMessageToPlayer(player, Component.literal("Вторая позиция установлена: " + blockPos.toShortString()));
+                        sendChatMessageToPlayer(player,
+                                getStyledComponent("[IVRegions] ", TextStyleUtil.DARK_AQUA.getStyle()).append(getStyledComponent("Вторая позиция установлена: " + blockPos.toShortString(), TextStyleUtil.PURPLE.getStyle()))
+                        );
                     region.setPos2(pos);
                 }
+                Network.sendTo(player, new RegionRenderPacket(region));
+                event.setCanceled(true);
+            }
+            if (heldItem.getItem() == Items.STICK) {
+                BlockPos blockPos = event.getPos();
+                Set<ChunkPos> chunkPosSet = RegionHelper.getChunksAroundBlock(blockPos, 1);
+                Pair<BlockPos, BlockPos> chunkPosPair = RegionHelper.getFarthestBlocks(chunkPosSet);
+
+                if (chunkPosPair == null) return;
+
+                Vec3 pos1 = new Vec3(chunkPosPair.getFirst().getX(), chunkPosPair.getFirst().getY(), chunkPosPair.getFirst().getZ());
+                Vec3 pos2 = new Vec3(chunkPosPair.getSecond().getX(), chunkPosPair.getSecond().getY(), chunkPosPair.getSecond().getZ());
+
+                Vec3 expandedPos1 = RegionHelper.expandToBounds(pos1, pos2, true);
+                Vec3 expandedPos2 = RegionHelper.expandToBounds(pos1, pos2, false);
+
+                RegionPositions region = RegionTracker.setRegion(player, expandedPos1, expandedPos2);
+
+                sendChatMessageToPlayer(player,
+                        getStyledComponent("[IVRegions] ", TextStyleUtil.DARK_AQUA.getStyle()).append(
+                                getStyledComponent("Автоматическое выделение региона с позициями: " + RegionHelper.toShortString(expandedPos1) + " и " + RegionHelper.toShortString(expandedPos2) + ".", TextStyleUtil.PURPLE.getStyle())
+                        )
+                );
+
                 Network.sendTo(player, new RegionRenderPacket(region));
                 event.setCanceled(true);
             }

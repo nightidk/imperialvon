@@ -22,7 +22,7 @@ public class AuthCommand {
 
         final LiteralCommandNode<CommandSourceStack> login = dispatcher.register(
                 Commands.literal("login")
-                        .then(Commands.argument("password", StringArgumentType.string())
+                        .then(Commands.argument("password", StringArgumentType.greedyString())
                                 .requires(s -> s.getPlayer() != null && !isAuthorized(s.getPlayer()) && isRegistered(s.getTextName()) && s.isPlayer())
                                 .executes(context -> {
                                     String password = context.getArgument("password", String.class);
@@ -46,7 +46,7 @@ public class AuthCommand {
                                             context.getSource().getPlayer().connection.disconnect(getStyledComponent("Неверный пароль", TextStyleUtil.RED.getStyle()));
                                         }
                                     } catch (Exception e) {
-                                        e.printStackTrace();
+                                        ImperialVon.LOG.error(e);
                                         context.getSource().getPlayer().connection.disconnect(getStyledComponent("Что-то пошло не так. Обратитесь к администрации.", TextStyleUtil.RED.getStyle()));
                                     }
                                     return 0;
@@ -80,7 +80,7 @@ public class AuthCommand {
                                                     context.getSource().getPlayer().setGameMode(playerDataHandler.getGameType());
                                                 }
                                             } catch (Exception e) {
-                                                e.printStackTrace();
+                                                ImperialVon.LOG.error(e);
                                                 context.getSource().getPlayer().connection.disconnect(getStyledComponent("Что-то пошло не так. Обратитесь к администрации.", TextStyleUtil.RED.getStyle()));
                                             }
                                         } else

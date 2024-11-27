@@ -31,10 +31,6 @@ public class RegionRenderer {
 
         Vec3 cameraPos = minecraft.gameRenderer.getMainCamera().getPosition();
 
-
-//        if (event.getRenderTick() % 120 == 0)
-//            System.out.println(box);
-
         Matrix4f matrix = event.getPoseStack().last().pose();
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder buffer = tesselator.getBuilder();
@@ -53,13 +49,13 @@ public class RegionRenderer {
         if (!Objects.equals(pos1, Vec3.ZERO) && !Objects.equals(pos2, Vec3.ZERO)) {
             AABB box = createAdjustedAABB(pos1, pos2).move(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
-            RenderSystem.setShader(GameRenderer::getPositionColorShader);
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            RenderSystem.disableTexture();
-
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthMask(false);
             RenderSystem.enablePolygonOffset();
-            RenderSystem.polygonOffset(-1.0f, -1.0f);
+            RenderSystem.polygonOffset(-2.0F, -2.0F);
+            RenderSystem.disableCull();
 
 
             buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
@@ -70,9 +66,10 @@ public class RegionRenderer {
             drawAABB(buffer, box, matrix);
             tesselator.end();
 
-            RenderSystem.disablePolygonOffset();
-            RenderSystem.enableTexture();
             RenderSystem.disableBlend();
+            RenderSystem.depthMask(true);
+            RenderSystem.disablePolygonOffset();
+            RenderSystem.enableCull();
         }
     }
 
